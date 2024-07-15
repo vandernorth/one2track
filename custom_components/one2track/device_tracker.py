@@ -40,7 +40,7 @@ async def async_setup_entry(
     LOGGER.warning("Adding %s found one2track devices", len(devices))
 
     for device in devices:
-        LOGGER.warning("Adding %s", device)
+        LOGGER.debug("Adding %s", device)
         async_add_entities(
             [
                 One2TrackSensor(
@@ -82,18 +82,6 @@ class GpsCoordinator(DataUpdateCoordinator):
 
                 update = True
 
-                # timetocheck = datetime.now() - CHECK_TIME_DELTA
-                # for device in data:
-                #     LOGGER.debug(
-                #         "Checking time: %s | Versus last measerument: %s",
-                #         timetocheck,
-                #         device.lastmeasurement,
-                #     )
-                #
-                #     if device.lastmeasurement > timetocheck:
-                #         update = True
-                #         break
-
                 if update or self.first_boot:
                     LOGGER.debug("Updating sensor data")
                     self.first_boot = False
@@ -109,7 +97,6 @@ class GpsCoordinator(DataUpdateCoordinator):
 
 
 class One2TrackSensor(CoordinatorEntity, TrackerEntity):
-    source_type = "gps"
     _device: TrackerDevice
 
     def __init__(
@@ -124,41 +111,96 @@ class One2TrackSensor(CoordinatorEntity, TrackerEntity):
         self._entry = entry
         self._device = device
         self._attr_unique_id = device['serial_number']
-        self._attr_name = f"tracker_{device['name']}"
+        self._attr_name = f"one2track_{device['name']}"
 
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{entry.entry_id}")},
-        )
+    @property
+    def name(self):
+        """Return the name of the device."""
+        return self._device['name']
 
-        # self._attr_native_unit_of_measurement = ""
-        # self._attr_device_class = SensorDeviceClass.POWER
-        # self._attr_state_class = SensorStateClass.MEASUREMENT
+    @property
+    def source_type(self):
+        """Return the source type, eg gps or router, of the device."""
+        return "gps" # TODO: Could be router when status=WIFI
+
+    def async_device_changed(self):
+        """Send changed data to HA"""
+        LOGGER.debug("%s (%d) advising HA of update", self.name, self.unique_id)
+        self.async_schedule_update_ha_state()
+
+    @property
+    def location_accuracy(self):
+        """Return the gps accuracy of the device."""
+        return 100  # TODO check signal strenth
+
+    @property
+    def should_poll(self):
+        return False
 
     @property
     def device_info(self):
-        return self._device
+        """Return the device_info of the device."""
+        return {
+            "identifiers": {(DOMAIN, self.unique_id)},
+            "serial_number": self._device['serial_number'],
+            "name": self._device['name']
+        }
 
+    @property
+    def icon(self):
+        return "mdi:map-marker-radius"
+
+    @property
+    def extra_state_attributes(self):
+        """Return device specific attributes."""
+        return {
+            "serial_number": self._device['serial_number'],
+            "uuid": self._device['uuid'],
+            "name": self._device['name'],
+
+            "status": self._device['status'],
+            "phone_number": self._device['phone_number'],
+            "tariff_type": self._device['simcard']['tariff_type'],
+            "balance_cents": self._device['simcard']['balance_cents'],
+
+            "last_communication": self._device['last_location']['last_communication'],
+            "last_location_update": self._device['last_location']['last_location_update'],
+            "altitude": self._device['last_location']['altitude'],
+            "location_type": self._device['last_location']['location_type'],
+            "signal_strength": self._device['last_location']['signal_strength'],
+            "satellite_count": self._device['last_location']['satellite_count'],
+            "host": self._device['last_location']['host'],
+            "port": self._device['last_location']['port'],
+        }
+
+    @property
+    def battery_level(self):
+        """Return battery value of the device."""
+        return self._device["last_location"]["battery_percentage"]
+
+
+    @property
     def location_name(self):
         """Return a location name for the current location of the device."""
         return self._device['last_location']['address']
 
+    @property
     def latitude(self):
         """Return latitude value of the device."""
         return self._device['last_location']['latitude']
 
+    @property
     def longitude(self):
         """Return longitude value of the device."""
         return self._device['last_location']['longitude']
 
+    @property
+    def unique_id(self):
+        """Return the unique ID."""
+        return self._device['uuid']
+
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-
-        if self.coordinator.data is not None:
-            LOGGER.info(
-                "Update the sensor %s - %s with the info from the coordinator",
-                self._device['id'],
-                self._device['name'],
-            )
 
         self.async_write_ha_state()

@@ -57,7 +57,7 @@ class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
 
                 return self.async_create_entry(
-                    title=f"one2track-{user_input[CONF_ID]}",
+                    title=f"{user_input[CONF_USER_NAME]}/{user_input[CONF_ID]}",
                     data=user_input,
                 )
             except AuthenticationError:
