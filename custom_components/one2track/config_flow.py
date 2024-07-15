@@ -36,15 +36,11 @@ class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     def __init__(self) -> None:
-        """Initialize flow."""
-        _LOGGER.warning('started flow')
         self._prefix = DEFAULT_PREFIX
 
     async def async_step_user(self, user_input=None):
-        """Handle the initial step."""
         errors = {}
         user_input = user_input or {}
-        _LOGGER.warning('go user input')
         if user_input:
             try:
                 account_id = await install_first_login(

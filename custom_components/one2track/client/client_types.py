@@ -1,4 +1,4 @@
-from typing import NamedTuple, TypedDict, List, Literal
+from typing import NamedTuple, TypedDict
 
 
 class AuthenticationError(Exception):
@@ -20,10 +20,9 @@ class One2TrackConfig(NamedTuple):
 
 class TrackerStatus(TypedDict):
     """
-    This data is what is returned by the API
+    Returned by the API
     """
 
-    # myAir returns this in the format %Y-%m-%d, at daily precision
     name: str
     phoneNumber: str
     lastUpdate: int
