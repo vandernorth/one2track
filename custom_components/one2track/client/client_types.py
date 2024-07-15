@@ -15,6 +15,7 @@ class One2TrackConfig(NamedTuple):
 
     username: str
     password: str
+    id: str = None
 
 
 class TrackerStatus(TypedDict):

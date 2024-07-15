@@ -23,12 +23,17 @@ class GpsClient():
     config: One2TrackConfig
     cookie: str = ""
     csrf: str = ""
+    account_id: str
 
     def __init__(self, config: One2TrackConfig):
         self.config = config
+        self.account_id = config.id  # might be empty
+
+    def set_account_id(self, account_id):
+        self.account_id = account_id
 
     async def get_csrf(self):
-        login_page = requests.get(CONFIG["login_url"])
+        login_page = await self.call_api(CONFIG["login_url"])
         if login_page.status_code == 200:
             html = login_page.text
             self.csrf = self.parse_csrf(html)
@@ -39,6 +44,25 @@ class GpsClient():
             _LOGGER.warning(f"[pre-log] failed pre-login. response code: {login_page.status_code}")
             raise AuthenticationError("Login page unavailable")
 
+    async def call_api(self, url: str, data=None, allow_redirects=True, use_json=False):
+        func = requests.get if data is None else requests.post
+        headers = {}
+        cookies = {}
+
+        if data is not None:
+            headers["content-type"] = "application/x-www-form-urlencoded"
+
+        if use_json:
+            headers["content-type"] = "application/json"
+            headers["Accept"] = "application/json"
+
+        if self.cookie:
+            # headers["cookie"] = f"_iadmin={self.cookie}"
+            cookies = {'accepted_cookies': 'true', '_iadmin': self.cookie}
+
+        print('call', url, headers, func)
+        return func(url, data=data, headers=headers, allow_redirects=allow_redirects, cookies=cookies)
+
     def parse_cookie(self, response) -> str:
         return response.headers['Set-Cookie'].split(CONFIG["session_cookie"])[1].split(";")[
             0].replace("=", "")
@@ -47,10 +71,6 @@ class GpsClient():
         return html.split("name=\"csrf-token\" content=\"")[1].split("\"")[0]
 
     async def login(self):
-        headers = {
-            "content-type": "application/x-www-form-urlencoded",
-            "cookie": f"_iadmin={self.cookie}"
-        }
         login_data = {
             "authenticity_token": self.csrf,
             "user[login]": self.config.username,
@@ -58,7 +78,7 @@ class GpsClient():
             "gdpr": "1",
             "user[remember_me]": "1",
         }
-        response = requests.post(CONFIG["login_url"], headers=headers, data=login_data, allow_redirects=False)
+        response = await self.call_api(CONFIG["login_url"], data=login_data, allow_redirects=False)
 
         print("[login] Status:", response.status_code)
 
@@ -73,11 +93,12 @@ class GpsClient():
             raise AuthenticationError("Invalid username or password")
 
     async def get_user_id(self):
-        response = requests.get(CONFIG["base_url"], allow_redirects=False, headers={"cookie": f"_iadmin={self.cookie}"})
+        response = await self.call_api(CONFIG["base_url"], allow_redirects=False)
         url = response.headers['Location']
-        id = url.split('/')[4]
-        print(f'[install] extracted {id} from {url}')
-        return id
+        account_id = url.split('/')[4]
+        print(f'[install] extracted {account_id} from {url}')
+        self.set_account_id(account_id)
+        return account_id
 
     async def install(self):
         await self.get_csrf()
@@ -109,10 +130,8 @@ class GpsClient():
             # hopefully next update loop login will be better
 
     async def get_device_data(self):
-        headers = {'content-type': 'application/json', 'Accept': 'application/json'}
-        cookies = {'accepted_cookies': 'true', '_iadmin': self.cookie}
-        url = CONFIG["device_url"].replace("%account%", self.config.id)
-        response = requests.get(url, headers=headers, cookies=cookies)
+        url = CONFIG["device_url"].replace("%account%", self.account_id)
+        response = await self.call_api(url, use_json=True)
         rawjson = response.text
 
         print("[devices] raw json:", response.status_code, rawjson)
