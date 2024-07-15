@@ -13,6 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 
 CONFIG = {
     "login_url": "https://www.one2trackgps.com/auth/users/sign_in",
+    "base_url": "https://www.one2trackgps.com/",
     "device_url": "https://www.one2trackgps.com/users/%account%/devices",
     "session_cookie": "_iadmin"
 }
@@ -66,9 +67,23 @@ class GpsClient():
             print("[login] login success!")
             self.cookie = self.parse_cookie(response)
             print(f"[login] Found this cookie: {self.cookie}")
+            print(f"[login] Found this redirect: {response.headers['Location']}")
         else:
             _LOGGER.warning(f"[gps] failed to login. response code: {response.status_code}")
             raise AuthenticationError("Invalid username or password")
+
+    async def get_user_id(self):
+        response = requests.get(CONFIG["base_url"], allow_redirects=False, headers={"cookie": f"_iadmin={self.cookie}"})
+        url = response.headers['Location']
+        id = url.split('/')[4]
+        print(f'[install] extracted {id} from {url}')
+        return id
+
+    async def install(self):
+        await self.get_csrf()
+        await self.login()
+        id = await self.get_user_id()
+        return id
 
     async def update(self) -> List[TrackerDevice]:
         if self.cookie:

@@ -23,11 +23,11 @@ from custom_components.one2track.client import get_client
 _LOGGER = logging.getLogger(__name__)
 
 
-async def get_device(username, password, id) -> List[TrackerDevice]:
-    config = One2TrackConfig(username=username, password=password, id=id)
+async def install_first_login(username, password) -> List[TrackerDevice]:
+    config = One2TrackConfig(username=username, password=password)
     client = get_client(config)
-    devices = await client.update()
-    return devices
+    account_id = await client.install()
+    return account_id
 
 
 class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -47,16 +47,16 @@ class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         _LOGGER.warning('go user input')
         if user_input:
             try:
-                devices: List[TrackerDevice] = await get_device(
+                account_id = await install_first_login(
                     user_input[CONF_USER_NAME],
-                    user_input[CONF_PASSWORD],
-                    user_input[CONF_ID]
+                    user_input[CONF_PASSWORD]
                 )
 
                 _LOGGER.info(
-                    f"One2Track GPS: Found devices {len(devices)}"
+                    f"One2Track GPS: Found account: {account_id}"
                 )
 
+                user_input[CONF_ID] = account_id
                 await self.async_set_unique_id(user_input[CONF_ID])
                 self._abort_if_unique_id_configured()
 
@@ -72,8 +72,7 @@ class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_USER_NAME): cv.string,
-                    vol.Required(CONF_PASSWORD): cv.string,
-                    vol.Required(CONF_ID): cv.string
+                    vol.Required(CONF_PASSWORD): cv.string
                 }
             ),
             errors=errors,
