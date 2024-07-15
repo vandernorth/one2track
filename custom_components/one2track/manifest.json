@@ -1,0 +1,15 @@
+{
+  "domain": "one2track",
+  "name": "One2Track GPS devices",
+  "codeowners": ["@vandernorth"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/vandernorth/one2track",
+  "homekit": {},
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/vandernorth/one2track/issues",
+  "requirements": [],
+  "ssdp": [],
+  "version": "1.0.1",
+  "zeroconf": []
+}
