@@ -1,6 +1,6 @@
 {
   "domain": "one2track",
-  "name": "One2Track GPS devices",
+  "name": "One2Track",
   "codeowners": ["@vandernorth"],
   "config_flow": true,
   "dependencies": [],
