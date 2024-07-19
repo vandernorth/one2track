@@ -184,6 +184,9 @@ class One2TrackSensor(CoordinatorEntity, TrackerEntity):
     @property
     def location_name(self):
         """Return a location name for the current location of the device."""
+        if self._device["last_location"]["location_type"] == 'WIFI':
+            return 'home'
+
         try:
             zone_name = self._hass.components.zone.async_active_zone(self.latitude, self.longitude)
             if zone_name:

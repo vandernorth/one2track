@@ -1,9 +1,18 @@
 # One2Track GPS trackers
 Integration to get One2Track watches/trackers information from the [web portal](https://www.one2trackgps.com/auth/users/sign_in)
 
+## Current features:
+ - Single entity
+ - Attributes contain all other information
+ - Detects zones
+ - Detects multiple devices in your account
 
-## CURRENT STATUS: DRAFT/IMPLEMENTING
-Discussions see [feature request](https://community.home-assistant.io/t/one2track-integration/686861)
+## Feature roadmap (PRs welcome)
+ - Create multiple entities 
+   - (e.g. last update, balance left, battery level)
+ - Add services
+   - Send message
+   - Force update
 
 # Installation
 The best method is using HACS (https://hacs.xyz)
