@@ -3,9 +3,8 @@ import logging
 
 DOMAIN = "one2track"
 DEFAULT_PREFIX = "one2track"
-DEFAULT_UPDATE_RATE_MIN = 5
+DEFAULT_UPDATE_RATE_MIN = 1
 
-UPDATE_DELAY = timedelta(minutes=DEFAULT_UPDATE_RATE_MIN)
 CHECK_TIME_DELTA = timedelta(hours=1, minutes=00)
 
 # Config keys
