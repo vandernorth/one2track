@@ -6,7 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 import async_timeout
-from homeassistant.compponents.zone import async_active_zone
+from homeassistant.components.zone import async_active_zone
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.core import callback
 from homeassistant.helpers.update_coordinator import (
