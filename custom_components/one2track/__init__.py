@@ -38,11 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {'api_client': api}
 
-    # for component in PLATFORMS:
-        # LOGGER.debug(f"[one2track] creating tracker for: {entry}")
-        # await hass.async_create_task(
-        #     hass.config_entries.async_forward_entry_setup(entry, component)
-        # )
+    LOGGER.debug(f"[one2track] forwarding setup to platforms: {PLATFORMS}")
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
