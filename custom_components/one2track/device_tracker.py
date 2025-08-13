@@ -6,6 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 import async_timeout
+from homeassistant.components.zone import async_active_zone
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.core import callback
 from homeassistant.helpers.update_coordinator import (
@@ -188,7 +189,7 @@ class One2TrackSensor(CoordinatorEntity, TrackerEntity):
             return 'home'
 
         try:
-            zone_name = self._hass.components.zone.async_active_zone(self.latitude, self.longitude)
+            zone_name = async_active_zone(self._hass, self.latitude, self.longitude, 0)
             if zone_name:
                 return zone_name.name
         except Exception as err:
