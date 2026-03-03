@@ -13,6 +13,7 @@ from .common import (
     DOMAIN,
     LOGGER
 )
+from .coordinator import GpsCoordinator
 
 PLATFORMS = [DEVICE_TRACKER]
 
@@ -35,14 +36,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         LOGGER.error(f"Unexpected initial account id: {account_id}. Expected: {entry.data[CONF_ID]}")
         raise ConfigEntryNotReady
 
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {'api_client': api}
+    coordinator = GpsCoordinator(hass, api)
 
-    # for component in PLATFORMS:
-        # LOGGER.debug(f"[one2track] creating tracker for: {entry}")
-        # await hass.async_create_task(
-        #     hass.config_entries.async_forward_entry_setup(entry, component)
-        # )
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = {
+        'api_client': api,
+        'coordinator': coordinator,
+    }
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True

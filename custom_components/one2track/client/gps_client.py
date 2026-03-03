@@ -45,7 +45,7 @@ class GpsClient():
             _LOGGER.warning(f"[pre-log] failed pre-login. response code: {login_page.status}")
             raise AuthenticationError("Login page unavailable")
 
-    async def call_api(self, url: str, data=None, allow_redirects=True, use_json=False):
+    async def call_api(self, url: str, data=None, allow_redirects=True, use_json=False, extra_headers=None):
         headers = {}
         cookies = {'accepted_cookies': 'true'}
 
@@ -55,6 +55,9 @@ class GpsClient():
         if use_json:
             headers["content-type"] = "application/json"
             headers["Accept"] = "application/json"
+
+        if extra_headers:
+            headers.update(extra_headers)
 
         if self.cookie:
             cookies['_iadmin'] = self.cookie
@@ -126,6 +129,66 @@ class GpsClient():
         await self.login()
         id = await self.get_user_id()
         return id
+
+    async def _ensure_authenticated(self):
+        """Ensure we have a valid session."""
+        if not self.cookie:
+            _LOGGER.debug("No session, logging in")
+            await self.get_csrf()
+            await self.login()
+            await self.get_user_id()
+
+    async def _get_csrf_token(self) -> str:
+        """Get a fresh CSRF token for action endpoints without affecting the session."""
+        response = await self.call_api(CONFIG["login_url"])
+        if response.status == 200:
+            html = await response.text()
+            return self.parse_csrf(html)
+        raise AuthenticationError("Could not get CSRF token")
+
+    async def send_message(self, device_uuid: str, message: str) -> bool:
+        """Send a text message to a One2Track device."""
+        await self._ensure_authenticated()
+        csrf = await self._get_csrf_token()
+
+        url = f"https://www.one2trackgps.com/devices/{device_uuid}/messages"
+
+        headers = {
+            "x-csrf-token": csrf,
+            "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "accept": "text/vnd.turbo-stream.html, text/html, application/xhtml+xml",
+        }
+
+        data = {
+            "utf8": "\u2713",
+            "authenticity_token": csrf,
+            "device_message[message]": message,
+        }
+
+        response = await self.call_api(url, data=data, extra_headers=headers)
+        return response.status == 200
+
+    async def force_update(self, device_uuid: str) -> bool:
+        """Activate positioning mode on the device for ~2 minutes."""
+        await self._ensure_authenticated()
+        csrf = await self._get_csrf_token()
+
+        url = f"https://www.one2trackgps.com/api/devices/{device_uuid}/functions"
+
+        headers = {
+            "x-csrf-token": csrf,
+            "x-requested-with": "XMLHttpRequest",
+            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        }
+
+        data = {
+            "utf8": "\u2713",
+            "function[code]": "0039",
+            "function[name]": "Actieve positioneringmodus",
+        }
+
+        response = await self.call_api(url, data=data, extra_headers=headers)
+        return response.status == 200
 
     async def update(self) -> List[TrackerDevice]:
         if self.cookie:

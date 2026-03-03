@@ -1,4 +1,4 @@
-from typing import NamedTuple, TypedDict
+from typing import List, NamedTuple, TypedDict
 
 
 class AuthenticationError(Exception):
@@ -18,31 +18,44 @@ class One2TrackConfig(NamedTuple):
     id: str = None
 
 
-class TrackerStatus(TypedDict):
-    """
-    Returned by the API
-    """
+class Station(TypedDict):
+    strength: str
+    mnc: str
+    mcc: str
+    lac: str
+    cid: str
 
+
+class Router(TypedDict):
+    signalStrength: str
     name: str
-    phoneNumber: str
-    lastUpdate: int
-    lat: float
-    long: float
+    macAddress: str
+
+
+class MetaData(TypedDict, total=False):
+    tumble: str
+    steps: str
+    stations: List[Station]
+    routers: List[Router]
+    course: float
+    accuracy_meters: float
+    accuracy: str
 
 
 class Location(TypedDict):
     id: int
-    last_communication: str  # json date
-    last_location_update: str  # json date
+    last_communication: str
+    last_location_update: str
     address: str
-    latitude: float
-    longitude: float
-    altitude: float
-    location_type: str  # e.g. WIFI
+    latitude: str
+    longitude: str
+    altitude: str
+    location_type: str
     signal_strength: int
     satellite_count: int
-    speed: float
+    speed: str
     battery_percentage: int
+    meta_data: MetaData
     host: str
     port: int
 
