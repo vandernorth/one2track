@@ -24,7 +24,19 @@ def _resolve_device_uuid(hass: HomeAssistant, entity_ids: list[str]) -> str:
     for entity_id in entity_ids:
         entry = registry.async_get(entity_id)
         if entry and entry.platform == DOMAIN:
-            return entry.unique_id
+            unique_id = entry.unique_id
+            # device_tracker unique_id is the raw UUID, but sensor entities
+            # use {uuid}_{key} format — match against known device UUIDs
+            for entry_data in hass.data.get(DOMAIN, {}).values():
+                if not isinstance(entry_data, dict):
+                    continue
+                coordinator = entry_data.get("coordinator")
+                if coordinator and coordinator.data:
+                    for device in coordinator.data:
+                        if unique_id == device.get("uuid") or unique_id.startswith(device.get("uuid", "") + "_"):
+                            return device["uuid"]
+            # Fall back to raw unique_id if no coordinator match
+            return unique_id
 
     raise HomeAssistantError(f"Could not resolve One2Track device from {entity_ids}")
 
