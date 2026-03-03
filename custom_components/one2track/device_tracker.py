@@ -26,8 +26,6 @@ async def async_setup_entry(
 
     coordinator: GpsCoordinator = hass.data[DOMAIN][entry.entry_id]['coordinator']
 
-    await coordinator.async_config_entry_first_refresh()
-
     devices: List[TrackerDevice] = coordinator.data or []
 
     LOGGER.info("Adding %s found one2track devices", len(devices))
