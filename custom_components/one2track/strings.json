@@ -17,5 +17,44 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
     }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "Battery"
+      },
+      "sim_balance": {
+        "name": "SIM balance"
+      },
+      "last_location_update": {
+        "name": "Last location update"
+      },
+      "last_communication": {
+        "name": "Last communication"
+      },
+      "signal_strength": {
+        "name": "Signal strength"
+      },
+      "satellite_count": {
+        "name": "Satellite count"
+      },
+      "speed": {
+        "name": "Speed"
+      },
+      "altitude": {
+        "name": "Altitude"
+      },
+      "steps": {
+        "name": "Steps"
+      },
+      "accuracy": {
+        "name": "GPS accuracy"
+      }
+    },
+    "binary_sensor": {
+      "tumble": {
+        "name": "Fall detected"
+      }
+    }
   }
 }
