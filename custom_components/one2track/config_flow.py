@@ -1,6 +1,10 @@
-from typing import List
+import logging
 
 from homeassistant import config_entries
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import voluptuous as vol
+import homeassistant.helpers.config_validation as cv
+
 from .common import (
     DOMAIN,
     DEFAULT_PREFIX,
@@ -8,26 +12,13 @@ from .common import (
     CONF_PASSWORD,
     CONF_ID
 )
-import voluptuous as vol
-import homeassistant.helpers.config_validation as cv
-import logging
-
-from custom_components.one2track.client import (
+from .client import (
+    get_client,
     One2TrackConfig,
-    TrackerDevice,
     AuthenticationError
 )
-from custom_components.one2track.client import get_client
-
 
 _LOGGER = logging.getLogger(__name__)
-
-
-async def install_first_login(username, password) -> List[TrackerDevice]:
-    config = One2TrackConfig(username=username, password=password)
-    client = get_client(config)
-    account_id = await client.install()
-    return account_id
 
 
 class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -43,13 +34,13 @@ class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         user_input = user_input or {}
         if user_input:
             try:
-                account_id = await install_first_login(
-                    user_input[CONF_USER_NAME],
-                    user_input[CONF_PASSWORD]
-                )
+                session = async_get_clientsession(self.hass)
+                config = One2TrackConfig(username=user_input[CONF_USER_NAME], password=user_input[CONF_PASSWORD])
+                client = get_client(config, session)
+                account_id = await client.install()
 
                 _LOGGER.info(
-                    f"One2Track GPS: Found account: {account_id}"
+                    "One2Track GPS: Found account: %s", account_id
                 )
 
                 user_input[CONF_ID] = account_id

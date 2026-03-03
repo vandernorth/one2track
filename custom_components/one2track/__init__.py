@@ -1,9 +1,9 @@
-import asyncio
 from requests import ConnectTimeout, HTTPError
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.const import Platform
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .client import get_client, One2TrackConfig
 from .common import (
@@ -21,8 +21,9 @@ PLATFORMS = [Platform.DEVICE_TRACKER]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up One2Track Data from a config entry."""
 
+    session = async_get_clientsession(hass)
     config = One2TrackConfig(username=entry.data[CONF_USER_NAME], password=entry.data[CONF_PASSWORD], id=entry.data[CONF_ID])
-    api = get_client(config)
+    api = get_client(config, session)
     try:
         account_id = await api.install()
     except (ConnectTimeout, HTTPError) as ex:
@@ -47,16 +48,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = all(
-        await asyncio.gather(
-            *[
-                hass.config_entries.async_forward_entry_unload(entry, component)
-                for component in PLATFORMS
-            ]
-        )
-    )
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
 

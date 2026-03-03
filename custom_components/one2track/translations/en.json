@@ -12,9 +12,11 @@
             }
         },
         "error": {
-            "already_configured": "Device is already configured",
-            "authentication_error": "Invalid username or password. Please verify with www.one2trackgps.com/"
-             },
+            "cannot_connect": "Failed to connect",
+            "invalid_auth": "Invalid authentication",
+            "authentication_error": "Invalid username or password. Please verify with www.one2trackgps.com/",
+            "unknown": "Unexpected error"
+        },
         "abort": {
             "already_configured": "Device is already configured"
         }

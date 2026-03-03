@@ -1,12 +1,11 @@
 import logging
-from typing import List
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.zone import async_active_zone
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
-from homeassistant.core import callback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .client import TrackerDevice
@@ -26,7 +25,7 @@ async def async_setup_entry(
 
     coordinator: GpsCoordinator = hass.data[DOMAIN][entry.entry_id]['coordinator']
 
-    devices: List[TrackerDevice] = coordinator.data or []
+    devices: list[TrackerDevice] = coordinator.data or []
 
     LOGGER.info("Adding %s found one2track devices", len(devices))
 
@@ -54,7 +53,6 @@ class One2TrackDeviceTracker(CoordinatorEntity, TrackerEntity):
         self._hass = hass
         self._device = device
         self._attr_unique_id = device['uuid']
-        self._attr_name = f"one2track_{device['name']}"
 
     @property
     def name(self):
@@ -79,13 +77,13 @@ class One2TrackDeviceTracker(CoordinatorEntity, TrackerEntity):
         return False
 
     @property
-    def device_info(self):
+    def device_info(self) -> DeviceInfo:
         """Return the device_info of the device."""
-        return {
-            "identifiers": {(DOMAIN, self.unique_id)},
-            "serial_number": self._device['serial_number'],
-            "name": self._device['name']
-        }
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._device['uuid'])},
+            serial_number=self._device['serial_number'],
+            name=self._device['name'],
+        )
 
     @property
     def icon(self):
@@ -127,7 +125,9 @@ class One2TrackDeviceTracker(CoordinatorEntity, TrackerEntity):
         """Return a location name for the current location of the device."""
         try:
             if self.latitude is not None and self.longitude is not None:
-                zone_name = async_active_zone(self._hass, self.latitude, self.longitude, 0)
+                zone_name = async_active_zone(
+                    self._hass, self.latitude, self.longitude, self.location_accuracy
+                )
                 if zone_name:
                     return zone_name.name
         except Exception as err:
@@ -165,7 +165,7 @@ class One2TrackDeviceTracker(CoordinatorEntity, TrackerEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         """Respond to a DataUpdateCoordinator update."""
-        new_data: List[TrackerDevice] = self.coordinator.data
+        new_data: list[TrackerDevice] = self.coordinator.data
         if new_data:
             me = next((x for x in new_data if x['uuid'] == self.unique_id), None)
             if me:

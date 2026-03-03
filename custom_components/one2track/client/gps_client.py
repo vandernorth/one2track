@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List
+
 from aiohttp import ClientSession
 from .client_types import (
     TrackerDevice,
@@ -23,9 +23,8 @@ class GpsClient():
     cookie: str = ""
     csrf: str = ""
     account_id: str
-    session: ClientSession
 
-    def __init__(self, config: One2TrackConfig, session: ClientSession = None):
+    def __init__(self, config: One2TrackConfig, session: ClientSession):
         self.config = config
         self.account_id = config.id  # might be empty
         self.session = session
@@ -38,11 +37,11 @@ class GpsClient():
         if login_page.status == 200:
             html = await login_page.text()
             self.csrf = self.parse_csrf(html)
-            _LOGGER.debug(f"[pre-login] Found this CSRF: {self.csrf}")
+            _LOGGER.debug("[pre-login] Found CSRF token")
             self.cookie = self.parse_cookie(login_page)
-            _LOGGER.debug(f"[pre-login] Found this cookie: {self.cookie}")
+            _LOGGER.debug("[pre-login] Found session cookie")
         else:
-            _LOGGER.warning(f"[pre-log] failed pre-login. response code: {login_page.status}")
+            _LOGGER.warning("[pre-login] Failed pre-login, response code: %s", login_page.status)
             raise AuthenticationError("Login page unavailable")
 
     async def call_api(self, url: str, data=None, allow_redirects=True, use_json=False, extra_headers=None):
@@ -64,11 +63,6 @@ class GpsClient():
 
         _LOGGER.debug('[http] %s %s %s', url, headers, cookies)
 
-        if self.session is None:
-            self.session = ClientSession()
-
-        self.session.cookie_jar.clear()
-
         if data is not None:
             return await self.session.post(url,
                                            data=data,
@@ -88,7 +82,7 @@ class GpsClient():
             return response.headers['Set-Cookie'].split(CONFIG["session_cookie"])[1].split(";")[
                 0].replace("=", "")
         else:
-            _LOGGER.warning(f"No new cookie found {self.cookie} was the old cookie")
+            _LOGGER.warning("No new cookie found, old cookie: %s", self.cookie)
             return ""
 
     def parse_csrf(self, html) -> str:
@@ -110,25 +104,23 @@ class GpsClient():
         if response.status == 302 and "Set-Cookie" in response.headers:
             _LOGGER.debug("[login] login success!")
             self.cookie = self.parse_cookie(response)
-            _LOGGER.debug(f"[login] Found this cookie: {self.cookie}")
-            _LOGGER.debug(f"[login] Found this redirect: {response.headers['Location']}")
+            _LOGGER.debug("[login] Got new session cookie")
         else:
-            _LOGGER.warning(f"[gps] failed to login. response code: {response.status}")
+            _LOGGER.warning("[login] Failed to login, response code: %s", response.status)
             raise AuthenticationError("Invalid username or password")
 
     async def get_user_id(self):
         response = await self.call_api(CONFIG["base_url"], allow_redirects=False)
         url = response.headers['Location']
         account_id = url.split('/')[4]
-        _LOGGER.debug(f'[install] extracted {account_id} from {url}')
+        _LOGGER.debug("[install] Extracted account id from redirect")
         self.set_account_id(account_id)
         return account_id
 
     async def install(self):
         await self.get_csrf()
         await self.login()
-        id = await self.get_user_id()
-        return id
+        return await self.get_user_id()
 
     async def _ensure_authenticated(self):
         """Ensure we have a valid session."""
@@ -139,7 +131,7 @@ class GpsClient():
             await self.get_user_id()
 
     async def _get_csrf_token(self) -> str:
-        """Get a fresh CSRF token for action endpoints without affecting the session."""
+        """Get a fresh CSRF token for action endpoints."""
         response = await self.call_api(CONFIG["login_url"])
         if response.status == 200:
             html = await response.text()
@@ -190,26 +182,19 @@ class GpsClient():
         response = await self.call_api(url, data=data, extra_headers=headers)
         return response.status == 200
 
-    async def update(self) -> List[TrackerDevice]:
+    async def update(self) -> list[TrackerDevice]:
         if self.cookie:
-            _LOGGER.debug("already logged in, continue... %s", self.cookie)
+            _LOGGER.debug("Already logged in, continue...")
         else:
-            _LOGGER.debug("renew login")
+            _LOGGER.debug("Renewing login")
             await self.get_csrf()
             await self.login()
             await self.get_user_id()
 
-        try:
-            devices = await self.get_device_data()
-            return devices
+        devices = await self.get_device_data()
+        return devices
 
-        except AuthenticationError:
-            _LOGGER.warning("login failed")
-            self.cookie = ""
-            self.csrf = ""
-            # hopefully next update loop login will be better
-
-    async def get_device_data(self):
+    async def get_device_data(self) -> list[TrackerDevice]:
         url = CONFIG["device_url"].replace("%account%", self.account_id)
         response = await self.call_api(url, use_json=True)
         rawjson = await response.text()
@@ -221,15 +206,10 @@ class GpsClient():
                 devices = json.loads(rawjson)
                 return list(map(lambda x: x['device'], devices))
             except Exception as e:
-                _LOGGER.error("[one2track][error][update] Cannot parse JSON: %s | %s", rawjson, e)
-                return None
+                _LOGGER.error("[one2track] Cannot parse JSON: %s | %s", rawjson, e)
+                raise
         else:
-            _LOGGER.error(f"[one2track][error][update] Cant get devices updated: code: %s message: %s", response.status,
-                          rawjson)
+            _LOGGER.error("[one2track] Cannot get devices, code: %s", response.status)
             self.cookie = ""
             self.csrf = ""
-            # hopefully next update loop login will be better
-            return []
-
-    async def close(self):
-        await self.session.close()
+            raise AuthenticationError(f"API returned status {response.status}")
