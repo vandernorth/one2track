@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -7,6 +6,7 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -25,7 +25,7 @@ async def async_setup_entry(
     """Set up One2Track binary sensor entities."""
     coordinator: GpsCoordinator = hass.data[DOMAIN][entry.entry_id]['coordinator']
 
-    devices: List[TrackerDevice] = coordinator.data or []
+    devices: list[TrackerDevice] = coordinator.data or []
 
     async_add_entities(
         [One2TrackTumbleSensor(coordinator, device) for device in devices]
@@ -49,12 +49,12 @@ class One2TrackTumbleSensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_unique_id = f"{device['uuid']}_tumble"
 
     @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._device['uuid'])},
-            "serial_number": self._device['serial_number'],
-            "name": self._device['name'],
-        }
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._device['uuid'])},
+            serial_number=self._device['serial_number'],
+            name=self._device['name'],
+        )
 
     @property
     def is_on(self) -> bool | None:
@@ -65,7 +65,7 @@ class One2TrackTumbleSensor(CoordinatorEntity, BinarySensorEntity):
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        new_data: List[TrackerDevice] = self.coordinator.data
+        new_data: list[TrackerDevice] = self.coordinator.data
         if new_data:
             me = next((x for x in new_data if x['uuid'] == self._device['uuid']), None)
             if me:

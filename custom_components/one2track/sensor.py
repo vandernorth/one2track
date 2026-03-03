@@ -1,7 +1,8 @@
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, List
+from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -16,6 +17,7 @@ from homeassistant.const import (
     UnitOfSpeed,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -200,7 +202,7 @@ async def async_setup_entry(
     """Set up One2Track sensor entities."""
     coordinator: GpsCoordinator = hass.data[DOMAIN][entry.entry_id]['coordinator']
 
-    devices: List[TrackerDevice] = coordinator.data or []
+    devices: list[TrackerDevice] = coordinator.data or []
 
     entities = []
     for device in devices:
@@ -230,12 +232,12 @@ class One2TrackSensorEntity(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{device['uuid']}_{description.key}"
 
     @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._device['uuid'])},
-            "serial_number": self._device['serial_number'],
-            "name": self._device['name'],
-        }
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._device['uuid'])},
+            serial_number=self._device['serial_number'],
+            name=self._device['name'],
+        )
 
     @property
     def native_value(self) -> Any:
@@ -243,7 +245,7 @@ class One2TrackSensorEntity(CoordinatorEntity, SensorEntity):
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        new_data: List[TrackerDevice] = self.coordinator.data
+        new_data: list[TrackerDevice] = self.coordinator.data
         if new_data:
             me = next((x for x in new_data if x['uuid'] == self._device['uuid']), None)
             if me:
