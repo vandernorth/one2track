@@ -96,7 +96,10 @@ def _get_accuracy(device: TrackerDevice) -> float | None:
 
 
 def _get_status(device: TrackerDevice) -> str | None:
-    return device.get("status")
+    val = device.get("status")
+    if val is not None:
+        return val.lower()
+    return None
 
 
 SENSOR_DESCRIPTIONS: list[One2TrackSensorDescription] = [
@@ -182,7 +185,7 @@ SENSOR_DESCRIPTIONS: list[One2TrackSensorDescription] = [
         key="status",
         translation_key="status",
         device_class=SensorDeviceClass.ENUM,
-        options=["GPS", "WIFI", "OFFLINE"],
+        options=["gps", "wifi", "offline"],
         icon="mdi:access-point-network",
         value_fn=_get_status,
     ),
