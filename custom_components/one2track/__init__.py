@@ -1,11 +1,11 @@
-from requests import ConnectTimeout, HTTPError
+from aiohttp import ClientError
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.const import Platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .client import get_client, One2TrackConfig
+from .client import get_client, One2TrackConfig, AuthenticationError
 from .common import (
     CONF_USER_NAME,
     CONF_PASSWORD,
@@ -26,7 +26,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     api = get_client(config, session)
     try:
         account_id = await api.install()
-    except (ConnectTimeout, HTTPError) as ex:
+    except (ClientError, AuthenticationError) as ex:
         LOGGER.error("Could not retrieve details from One2Track API")
         raise ConfigEntryNotReady from ex
 

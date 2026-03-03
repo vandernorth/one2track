@@ -1,21 +1,16 @@
-from typing import List, NamedTuple, TypedDict
+from typing import NamedTuple, TypedDict
 
 
 class AuthenticationError(Exception):
-    """This error is thrown when Authentication fails, which can mean the username/password or domain is incorrect"""
-
-    pass
+    """Raised when authentication fails (wrong username/password or unavailable)."""
 
 
 class One2TrackConfig(NamedTuple):
-    """
-    This is our config for logging into One2Track
-
-    """
+    """Login configuration for One2Track."""
 
     username: str
     password: str
-    id: str = None
+    id: str | None = None
 
 
 class Station(TypedDict):
@@ -35,8 +30,8 @@ class Router(TypedDict):
 class MetaData(TypedDict, total=False):
     tumble: str
     steps: str
-    stations: List[Station]
-    routers: List[Router]
+    stations: list[Station]
+    routers: list[Router]
     course: float
     accuracy_meters: float
     accuracy: str

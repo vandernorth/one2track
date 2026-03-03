@@ -73,10 +73,6 @@ class One2TrackDeviceTracker(CoordinatorEntity, TrackerEntity):
         return 10
 
     @property
-    def should_poll(self):
-        return False
-
-    @property
     def device_info(self) -> DeviceInfo:
         """Return the device_info of the device."""
         return DeviceInfo(
@@ -156,11 +152,6 @@ class One2TrackDeviceTracker(CoordinatorEntity, TrackerEntity):
             except (ValueError, TypeError):
                 return None
         return None
-
-    @property
-    def unique_id(self):
-        """Return the unique ID."""
-        return self._device['uuid']
 
     @callback
     def _handle_coordinator_update(self) -> None:

@@ -1,7 +1,6 @@
 import logging
 
 DOMAIN = "one2track"
-DEFAULT_PREFIX = "one2track"
 DEFAULT_UPDATE_RATE_MIN = 1
 
 # Config keys

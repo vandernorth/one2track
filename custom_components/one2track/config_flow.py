@@ -7,7 +7,6 @@ import homeassistant.helpers.config_validation as cv
 
 from .common import (
     DOMAIN,
-    DEFAULT_PREFIX,
     CONF_USER_NAME,
     CONF_PASSWORD,
     CONF_ID
@@ -25,9 +24,6 @@ class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # For future migration support
     VERSION = 1
-
-    def __init__(self) -> None:
-        self._prefix = DEFAULT_PREFIX
 
     async def async_step_user(self, user_input=None):
         errors = {}

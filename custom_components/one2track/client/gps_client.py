@@ -1,4 +1,3 @@
-import json
 import logging
 
 from aiohttp import ClientSession
@@ -183,33 +182,19 @@ class GpsClient():
         return response.status == 200
 
     async def update(self) -> list[TrackerDevice]:
-        if self.cookie:
-            _LOGGER.debug("Already logged in, continue...")
-        else:
-            _LOGGER.debug("Renewing login")
-            await self.get_csrf()
-            await self.login()
-            await self.get_user_id()
-
-        devices = await self.get_device_data()
-        return devices
+        await self._ensure_authenticated()
+        return await self.get_device_data()
 
     async def get_device_data(self) -> list[TrackerDevice]:
         url = CONFIG["device_url"].replace("%account%", self.account_id)
         response = await self.call_api(url, use_json=True)
-        rawjson = await response.text()
 
-        _LOGGER.debug("[devices] raw json: %s %s", response.status, rawjson)
-
-        if response.status == 200:
-            try:
-                devices = json.loads(rawjson)
-                return list(map(lambda x: x['device'], devices))
-            except Exception as e:
-                _LOGGER.error("[one2track] Cannot parse JSON: %s | %s", rawjson, e)
-                raise
-        else:
+        if response.status != 200:
             _LOGGER.error("[one2track] Cannot get devices, code: %s", response.status)
             self.cookie = ""
             self.csrf = ""
             raise AuthenticationError(f"API returned status {response.status}")
+
+        data = await response.json(content_type=None)
+        _LOGGER.debug("[devices] Got %s devices", len(data))
+        return [item['device'] for item in data]

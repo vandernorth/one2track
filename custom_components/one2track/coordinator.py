@@ -2,6 +2,7 @@ import asyncio
 import logging
 from datetime import timedelta
 
+from aiohttp import ClientError
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
@@ -9,7 +10,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from .client import GpsClient
+from .client import GpsClient, AuthenticationError
 from .common import DEFAULT_UPDATE_RATE_MIN
 
 LOGGER = logging.getLogger(__name__)
@@ -37,6 +38,6 @@ class GpsCoordinator(DataUpdateCoordinator):
                 self.last_update = dt_util.utcnow()
                 return data
 
-        except Exception as err:
+        except (ClientError, AuthenticationError, TimeoutError) as err:
             LOGGER.error("Error updating from One2Track API: %s", err)
             raise UpdateFailed(err)
