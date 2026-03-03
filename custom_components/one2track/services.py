@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -19,6 +18,9 @@ ATTR_MESSAGE = "message"
 
 def _resolve_device_uuid(hass: HomeAssistant, entity_ids: list[str]) -> str:
     """Resolve a target entity ID to a One2Track device UUID."""
+    if not entity_ids:
+        raise HomeAssistantError("No target entity specified")
+
     registry = er.async_get(hass)
 
     for entity_id in entity_ids:
@@ -48,7 +50,7 @@ def _get_client_for_uuid(hass: HomeAssistant, device_uuid: str) -> GpsClient:
             continue
         coordinator: GpsCoordinator = entry_data.get("coordinator")
         if coordinator and coordinator.data:
-            devices: List[TrackerDevice] = coordinator.data
+            devices: list[TrackerDevice] = coordinator.data
             for device in devices:
                 if device.get("uuid") == device_uuid:
                     return entry_data["api_client"]
@@ -86,7 +88,6 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         if not success:
             raise HomeAssistantError("Failed to activate positioning mode on One2Track device")
 
-        # Refresh coordinator data after a delay to pick up new location
         for entry_data in hass.data.get(DOMAIN, {}).values():
             if not isinstance(entry_data, dict):
                 continue
@@ -99,7 +100,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         SERVICE_SEND_MESSAGE,
         handle_send_message,
         schema=vol.Schema({
-            vol.Optional("entity_id"): vol.Any(str, [str]),
+            vol.Required("entity_id"): vol.Any(str, [str]),
             vol.Required(ATTR_MESSAGE): str,
         }),
     )
@@ -109,7 +110,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         SERVICE_FORCE_UPDATE,
         handle_force_update,
         schema=vol.Schema({
-            vol.Optional("entity_id"): vol.Any(str, [str]),
+            vol.Required("entity_id"): vol.Any(str, [str]),
         }),
     )
 
