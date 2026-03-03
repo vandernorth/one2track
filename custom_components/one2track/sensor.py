@@ -95,6 +95,10 @@ def _get_accuracy(device: TrackerDevice) -> float | None:
     return None
 
 
+def _get_status(device: TrackerDevice) -> str | None:
+    return device.get("status")
+
+
 SENSOR_DESCRIPTIONS: list[One2TrackSensorDescription] = [
     One2TrackSensorDescription(
         key="battery",
@@ -173,6 +177,14 @@ SENSOR_DESCRIPTIONS: list[One2TrackSensorDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:crosshairs-gps",
         value_fn=_get_accuracy,
+    ),
+    One2TrackSensorDescription(
+        key="status",
+        translation_key="status",
+        device_class=SensorDeviceClass.ENUM,
+        options=["GPS", "WIFI", "OFFLINE"],
+        icon="mdi:access-point-network",
+        value_fn=_get_status,
     ),
 ]
 

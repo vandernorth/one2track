@@ -49,6 +49,14 @@
       },
       "accuracy": {
         "name": "GPS accuracy"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "gps": "GPS",
+          "wifi": "WiFi",
+          "offline": "Offline"
+        }
       }
     },
     "binary_sensor": {
