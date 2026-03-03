@@ -1,12 +1,13 @@
+import asyncio
 import logging
-from datetime import timedelta, datetime
+from datetime import timedelta
 
-import async_timeout
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
+from homeassistant.util import dt as dt_util
 
 from .client import GpsClient
 from .common import DEFAULT_UPDATE_RATE_MIN
@@ -29,13 +30,11 @@ class GpsCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Fetch data from API endpoint."""
         try:
-            async with async_timeout.timeout(300):
-                data = await (await self.hass.async_add_executor_job(
-                    self.gps_api.update
-                ))
+            async with asyncio.timeout(30):
+                data = await self.gps_api.update()
 
                 LOGGER.debug("Update from the coordinator %s", data)
-                self.last_update = datetime.now()
+                self.last_update = dt_util.utcnow()
                 return data
 
         except Exception as err:

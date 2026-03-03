@@ -32,7 +32,7 @@ async def async_setup_entry(
 
     async_add_entities(
         [
-            One2TrackSensor(coordinator, hass, entry, device)
+            One2TrackDeviceTracker(coordinator, hass, device)
             for device in devices
         ],
         update_before_add=False,
@@ -41,19 +41,17 @@ async def async_setup_entry(
     LOGGER.debug("Done adding all trackers.")
 
 
-class One2TrackSensor(CoordinatorEntity, TrackerEntity):
+class One2TrackDeviceTracker(CoordinatorEntity, TrackerEntity):
     _device: TrackerDevice
 
     def __init__(
             self,
             coordinator: GpsCoordinator,
             hass: HomeAssistant,
-            entry: ConfigEntry,
             device: TrackerDevice
     ) -> None:
         super().__init__(coordinator)
         self._hass = hass
-        self._entry = entry
         self._device = device
         self._attr_unique_id = device['uuid']
         self._attr_name = f"one2track_{device['name']}"
@@ -96,82 +94,82 @@ class One2TrackSensor(CoordinatorEntity, TrackerEntity):
     @property
     def extra_state_attributes(self):
         """Return device specific attributes."""
+        location = self._device.get('last_location', {})
+        simcard = self._device.get('simcard', {})
         return {
-            "serial_number": self._device['serial_number'],
-            "uuid": self._device['uuid'],
-            "name": self._device['name'],
+            "serial_number": self._device.get('serial_number'),
+            "uuid": self._device.get('uuid'),
+            "name": self._device.get('name'),
 
-            "status": self._device['status'],
-            "phone_number": self._device['phone_number'],
-            "tariff_type": self._device['simcard']['tariff_type'],
-            "balance_cents": self._device['simcard']['balance_cents'],
+            "status": self._device.get('status'),
+            "phone_number": self._device.get('phone_number'),
+            "tariff_type": simcard.get('tariff_type'),
+            "balance_cents": simcard.get('balance_cents'),
 
-            "last_communication": self._device['last_location']['last_communication'],
-            "last_location_update": self._device['last_location']['last_location_update'],
-            "altitude": self._device['last_location']['altitude'],
-            "location_type": self._device['last_location']['location_type'],
-            "address": self._device['last_location']['address'],
-            "signal_strength": self._device['last_location']['signal_strength'],
-            "satellite_count": self._device['last_location']['satellite_count'],
-            "host": self._device['last_location']['host'],
-            "port": self._device['last_location']['port'],
+            "last_communication": location.get('last_communication'),
+            "last_location_update": location.get('last_location_update'),
+            "altitude": location.get('altitude'),
+            "location_type": location.get('location_type'),
+            "address": location.get('address'),
+            "signal_strength": location.get('signal_strength'),
+            "satellite_count": location.get('satellite_count'),
+            "host": location.get('host'),
+            "port": location.get('port'),
         }
 
     @property
     def battery_level(self):
         """Return battery value of the device."""
-        return self._device["last_location"]["battery_percentage"]
+        return self._device.get("last_location", {}).get("battery_percentage")
 
     @property
     def location_name(self):
         """Return a location name for the current location of the device."""
-        if self._device["last_location"]["location_type"] == 'WIFI':
-            return 'home'
-
         try:
-            zone_name = async_active_zone(self._hass, self.latitude, self.longitude, 0)
-            if zone_name:
-                return zone_name.name
+            if self.latitude is not None and self.longitude is not None:
+                zone_name = async_active_zone(self._hass, self.latitude, self.longitude, 0)
+                if zone_name:
+                    return zone_name.name
         except Exception as err:
-            LOGGER.error(f"Cannot get zone for tracker: {err}")
+            LOGGER.error("Cannot get zone for tracker: %s", err)
 
-        return self._device['last_location']['address']
+        return self._device.get('last_location', {}).get('address')
 
     @property
     def latitude(self):
         """Return latitude value of the device."""
-        return float(self._device['last_location']['latitude'])
+        val = self._device.get('last_location', {}).get('latitude')
+        if val is not None:
+            try:
+                return float(val)
+            except (ValueError, TypeError):
+                return None
+        return None
 
     @property
     def longitude(self):
         """Return longitude value of the device."""
-        return float(self._device['last_location']['longitude'])
+        val = self._device.get('last_location', {}).get('longitude')
+        if val is not None:
+            try:
+                return float(val)
+            except (ValueError, TypeError):
+                return None
+        return None
 
     @property
     def unique_id(self):
         """Return the unique ID."""
         return self._device['uuid']
 
-    async def async_added_to_hass(self):
-        """Register state update callback."""
-        await super().async_added_to_hass()
-
-    async def async_will_remove_from_hass(self):
-        """Clean up after entity before removal."""
-        await super().async_will_remove_from_hass()
-
-    @callback
-    def _update_from_latest_data(self) -> None:
-        """Update the entity from the latest data."""
-        new_data: List[TrackerDevice] = self.coordinator.data
-        me = next((x for x in new_data if x['uuid'] == self.unique_id), None)
-        if me:
-            self._device = me
-        else:
-            LOGGER.error(f"Tracker {self.unique_id} not found in new data: {new_data}")
-
     @callback
     def _handle_coordinator_update(self) -> None:
         """Respond to a DataUpdateCoordinator update."""
-        self._update_from_latest_data()
+        new_data: List[TrackerDevice] = self.coordinator.data
+        if new_data:
+            me = next((x for x in new_data if x['uuid'] == self.unique_id), None)
+            if me:
+                self._device = me
+            else:
+                LOGGER.error("Tracker %s not found in new data", self.unique_id)
         self.async_write_ha_state()
