@@ -60,6 +60,8 @@ def _get_client_for_uuid(hass: HomeAssistant, device_uuid: str) -> GpsClient:
 
 async def async_setup_services(hass: HomeAssistant) -> None:
     """Set up One2Track services."""
+    if hass.services.has_service(DOMAIN, SERVICE_SEND_MESSAGE):
+        return
 
     async def handle_send_message(call: ServiceCall) -> None:
         entity_ids = call.data.get("entity_id", [])
