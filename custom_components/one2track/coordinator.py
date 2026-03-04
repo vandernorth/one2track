@@ -40,4 +40,4 @@ class GpsCoordinator(DataUpdateCoordinator):
 
         except (ClientError, AuthenticationError, TimeoutError) as err:
             LOGGER.error("Error updating from One2Track API: %s", err)
-            raise UpdateFailed(err)
+            raise UpdateFailed(f"Error communicating with API: {err}") from err

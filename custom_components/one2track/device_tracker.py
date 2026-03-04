@@ -91,12 +91,12 @@ class One2TrackDeviceTracker(CoordinatorEntity, TrackerEntity):
         location = self._device.get('last_location', {})
         simcard = self._device.get('simcard', {})
         return {
-            "serial_number": self._device.get('serial_number'),
-            "uuid": self._device.get('uuid'),
-            "name": self._device.get('name'),
+            "serial_number": self._device['serial_number'],
+            "uuid": self._device['uuid'],
+            "name": self._device['name'],
 
-            "status": self._device.get('status'),
-            "phone_number": self._device.get('phone_number'),
+            "status": self._device['status'],
+            "phone_number": self._device['phone_number'],
             "tariff_type": simcard.get('tariff_type'),
             "balance_cents": simcard.get('balance_cents'),
 
