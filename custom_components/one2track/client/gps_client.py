@@ -134,6 +134,10 @@ class GpsClient():
         response = await self.call_api(CONFIG["login_url"])
         if response.status == 200:
             html = await response.text()
+            # Update session cookie if the server sends a new one
+            new_cookie = self.parse_cookie(response)
+            if new_cookie:
+                self.cookie = new_cookie
             return self.parse_csrf(html)
         raise AuthenticationError("Could not get CSRF token")
 
