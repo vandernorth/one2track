@@ -1,11 +1,11 @@
-import asyncio
-from requests import ConnectTimeout, HTTPError
+from aiohttp import ClientError
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.components.device_tracker import DOMAIN as DEVICE_TRACKER
+from homeassistant.const import Platform
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .client import get_client, One2TrackConfig
+from .client import get_client, One2TrackConfig, AuthenticationError
 from .common import (
     CONF_USER_NAME,
     CONF_PASSWORD,
@@ -13,51 +13,44 @@ from .common import (
     DOMAIN,
     LOGGER
 )
+from .coordinator import GpsCoordinator
 
-PLATFORMS = [DEVICE_TRACKER]
+PLATFORMS = [Platform.DEVICE_TRACKER]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up One2Track Data from a config entry."""
 
-    if not DOMAIN in hass.data:
-        hass.data[DOMAIN] = {}
-
+    session = async_get_clientsession(hass)
     config = One2TrackConfig(username=entry.data[CONF_USER_NAME], password=entry.data[CONF_PASSWORD], id=entry.data[CONF_ID])
-    api = get_client(config)
+    api = get_client(config, session)
     try:
-        account_id = await (await hass.async_add_executor_job(api.install))
-    except (ConnectTimeout, HTTPError) as ex:
+        account_id = await api.install()
+    except (ClientError, AuthenticationError) as ex:
         LOGGER.error("Could not retrieve details from One2Track API")
         raise ConfigEntryNotReady from ex
 
     if account_id != entry.data[CONF_ID]:
-        LOGGER.error(f"Unexpected initial account id: {account_id}. Expected: {entry.data[CONF_ID]}")
+        LOGGER.error("Unexpected initial account id: %s. Expected: %s", account_id, entry.data[CONF_ID])
         raise ConfigEntryNotReady
 
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {'api_client': api}
+    coordinator = GpsCoordinator(hass, api)
+    await coordinator.async_config_entry_first_refresh()
 
-    # for component in PLATFORMS:
-        # LOGGER.debug(f"[one2track] creating tracker for: {entry}")
-        # await hass.async_create_task(
-        #     hass.config_entries.async_forward_entry_setup(entry, component)
-        # )
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = {
+        'api_client': api,
+        'coordinator': coordinator,
+    }
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = all(
-        await asyncio.gather(
-            *[
-                hass.config_entries.async_forward_entry_unload(entry, component)
-                for component in PLATFORMS
-            ]
-        )
-    )
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
 
