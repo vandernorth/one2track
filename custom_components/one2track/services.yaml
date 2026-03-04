@@ -1,1 +1,23 @@
-# TODO: Add service to push message
+send_message:
+  name: Send message
+  description: Send a text message to a One2Track device
+  target:
+    entity:
+      integration: one2track
+      domain: device_tracker
+  fields:
+    message:
+      name: Message
+      description: The text message to send to the device
+      required: true
+      example: "Time to come home!"
+      selector:
+        text:
+
+force_update:
+  name: Force update
+  description: Activate positioning mode on a One2Track device for ~2 minutes
+  target:
+    entity:
+      integration: one2track
+      domain: device_tracker
