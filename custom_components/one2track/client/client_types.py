@@ -2,11 +2,14 @@ from typing import NamedTuple, TypedDict
 
 
 class AuthenticationError(Exception):
-    """Raised when authentication fails (wrong username/password or unavailable)."""
+    """This error is thrown when Authentication fails, which can mean the username/password or domain is incorrect"""
 
 
 class One2TrackConfig(NamedTuple):
-    """Login configuration for One2Track."""
+    """
+    This is our config for logging into One2Track
+
+    """
 
     username: str
     password: str
@@ -39,13 +42,13 @@ class MetaData(TypedDict, total=False):
 
 class Location(TypedDict):
     id: int
-    last_communication: str
-    last_location_update: str
+    last_communication: str  # json date
+    last_location_update: str  # json date
     address: str
     latitude: str
     longitude: str
     altitude: str
-    location_type: str
+    location_type: str  # e.g. WIFI
     signal_strength: int
     satellite_count: int
     speed: str
@@ -65,7 +68,7 @@ class TrackerDevice(TypedDict):
     serial_number: str
     name: str
     phone_number: str
-    status: str
+    status: str  # e.g. GPS, WIFI
     uuid: str
     last_location: Location
     simcard: Simcard
