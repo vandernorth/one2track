@@ -12,11 +12,60 @@
             }
         },
         "error": {
-            "already_configured": "Device is already configured",
-            "authentication_error": "Invalid username or password. Please verify with www.one2trackgps.com/"
-             },
+            "cannot_connect": "Failed to connect",
+            "invalid_auth": "Invalid authentication",
+            "authentication_error": "Invalid username or password. Please verify with www.one2trackgps.com/",
+            "unknown": "Unexpected error"
+        },
         "abort": {
             "already_configured": "Device is already configured"
+        }
+    },
+    "entity": {
+        "sensor": {
+            "battery": {
+                "name": "Battery"
+            },
+            "sim_balance": {
+                "name": "SIM balance"
+            },
+            "last_location_update": {
+                "name": "Last location update"
+            },
+            "last_communication": {
+                "name": "Last communication"
+            },
+            "signal_strength": {
+                "name": "Signal strength"
+            },
+            "satellite_count": {
+                "name": "Satellite count"
+            },
+            "speed": {
+                "name": "Speed"
+            },
+            "altitude": {
+                "name": "Altitude"
+            },
+            "steps": {
+                "name": "Steps"
+            },
+            "accuracy": {
+                "name": "GPS accuracy"
+            },
+            "status": {
+                "name": "Status",
+                "state": {
+                    "gps": "GPS",
+                    "wifi": "WiFi",
+                    "offline": "Offline"
+                }
+            }
+        },
+        "binary_sensor": {
+            "tumble": {
+                "name": "Fall detected"
+            }
         }
     }
 }

@@ -4,8 +4,6 @@ from typing import NamedTuple, TypedDict
 class AuthenticationError(Exception):
     """This error is thrown when Authentication fails, which can mean the username/password or domain is incorrect"""
 
-    pass
-
 
 class One2TrackConfig(NamedTuple):
     """
@@ -15,19 +13,31 @@ class One2TrackConfig(NamedTuple):
 
     username: str
     password: str
-    id: str = None
+    id: str | None = None
 
 
-class TrackerStatus(TypedDict):
-    """
-    Returned by the API
-    """
+class Station(TypedDict):
+    strength: str
+    mnc: str
+    mcc: str
+    lac: str
+    cid: str
 
+
+class Router(TypedDict):
+    signalStrength: str
     name: str
-    phoneNumber: str
-    lastUpdate: int
-    lat: float
-    long: float
+    macAddress: str
+
+
+class MetaData(TypedDict, total=False):
+    tumble: str
+    steps: str
+    stations: list[Station]
+    routers: list[Router]
+    course: float
+    accuracy_meters: float
+    accuracy: str
 
 
 class Location(TypedDict):
@@ -35,14 +45,15 @@ class Location(TypedDict):
     last_communication: str  # json date
     last_location_update: str  # json date
     address: str
-    latitude: float
-    longitude: float
-    altitude: float
+    latitude: str
+    longitude: str
+    altitude: str
     location_type: str  # e.g. WIFI
     signal_strength: int
     satellite_count: int
-    speed: float
+    speed: str
     battery_percentage: int
+    meta_data: MetaData
     host: str
     port: int
 
@@ -57,7 +68,7 @@ class TrackerDevice(TypedDict):
     serial_number: str
     name: str
     phone_number: str
-    status: str
+    status: str  # e.g. GPS, WIFI
     uuid: str
     last_location: Location
     simcard: Simcard

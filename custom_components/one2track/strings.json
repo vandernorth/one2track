@@ -3,18 +3,66 @@
     "step": {
       "user": {
         "data": {
-          "username": "[%key:common::config_flow::data::username%]",
-          "password": "[%key:common::config_flow::data::password%]"
+          "Username": "[%key:common::config_flow::data::username%]",
+          "Password": "[%key:common::config_flow::data::password%]"
         }
       }
     },
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "authentication_error": "[%key:common::config_flow::error::invalid_auth%]",
       "unknown": "[%key:common::config_flow::error::unknown%]"
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "Battery"
+      },
+      "sim_balance": {
+        "name": "SIM balance"
+      },
+      "last_location_update": {
+        "name": "Last location update"
+      },
+      "last_communication": {
+        "name": "Last communication"
+      },
+      "signal_strength": {
+        "name": "Signal strength"
+      },
+      "satellite_count": {
+        "name": "Satellite count"
+      },
+      "speed": {
+        "name": "Speed"
+      },
+      "altitude": {
+        "name": "Altitude"
+      },
+      "steps": {
+        "name": "Steps"
+      },
+      "accuracy": {
+        "name": "GPS accuracy"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "gps": "GPS",
+          "wifi": "WiFi",
+          "offline": "Offline"
+        }
+      }
+    },
+    "binary_sensor": {
+      "tumble": {
+        "name": "Fall detected"
+      }
     }
   }
 }

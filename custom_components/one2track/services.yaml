@@ -1,48 +1,23 @@
-# TODO: Add service to push message
-#0048 : turn off
-#0039 : refresh location
-#0077 : update GPS interval (must have cmd_value: 300/600/3600)
-send_device_command:
-  name: "Send Command to Device"  # Friendly name for the service
-  description: "Send a specific command to a device"
+send_message:
+  name: Send message
+  description: Send a text message to a One2Track device
+  target:
+    entity:
+      integration: one2track
+      domain: device_tracker
   fields:
-    device_id:
-      description: "The ID of the devicee"
-      example: "123456789abcdef"
-      selector:
-        device:
-          integration: one2track  # Change 'one2track' to the actual integration domain of your component
-    cmd_code:
-      description: "The function cmd_code supported by One2Track web api"
-      example: "0039"
-      selector:
-        text:
-          multiline: false
-    cmd_value:
-      description: "The function cmd_value supported by One2Track web api"
-      example: "600"
-      selector:
-        text:
-          multiline: false
-    cmd_value_param:
-      description: "The function cmd_value_param supported by One2Track web api"
-      example: "function[cmd_value][]"
-      selector:
-        text:
-          multiline: false
-send_device_message:
-  name: "Send Message to Device"  # Friendly name for the service
-  description: "Send a message to a specific device"
-  fields:
-    device_id:
-      description: "The ID of the device"
-      example: "123456789abcdef"
-      selector:
-        device:
-          integration: one2track  # Change 'one2track' to the actual integration domain of your component
     message:
-      description: "The message to send"
-      example: "Hi!"
+      name: Message
+      description: The text message to send to the device
+      required: true
+      example: "Time to come home!"
       selector:
         text:
-          multiline: false
+
+force_update:
+  name: Force update
+  description: Activate positioning mode on a One2Track device for ~2 minutes
+  target:
+    entity:
+      integration: one2track
+      domain: device_tracker
