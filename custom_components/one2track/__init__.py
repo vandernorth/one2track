@@ -1,5 +1,5 @@
 import asyncio
-from requests import ConnectTimeout, HTTPError
+import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -17,8 +17,6 @@ from .common import (
     LOGGER
 )
 
-from homeassistant.helpers import importlib
-
 PLATFORMS = [DEVICE_TRACKER]
 
 
@@ -34,7 +32,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         #would not work in devcontainer with latest ha core
         #account_id = await (await hass.async_add_executor_job(api.install))
         account_id = await api.install()
-    except (ConnectTimeout, HTTPError) as ex:
+    except (aiohttp.ClientError, TimeoutError) as ex:
         LOGGER.error("Could not retrieve details from One2Track API")
         raise ConfigEntryNotReady from ex
 
@@ -44,13 +42,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {'api_client': api}
-
-    # Import device actions asynchronously
-    device_action_module = await importlib.async_import_module(hass, f"custom_components.{DOMAIN}.device_action")
-
-    # Proceed with setup, e.g., register actions
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN]["device_action"] = device_action_module
 
 
     def get_device(hass, device_id):
@@ -82,8 +73,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         device = get_device(hass, device_id)
         uuid = get_uuid_from_device(device)
 
-        LOGGER.error("handle_send_device_command")
-        LOGGER.error(api_client)
+        LOGGER.debug("handle_send_device_command")
+        LOGGER.debug(api_client)
 
         if api_client:
             await api_client.send_device_command(uuid, cmd_code, cmd_value, cmd_value_param)
@@ -113,8 +104,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         device = get_device(hass, device_id)
         uuid = get_uuid_from_device(device)
 
-        LOGGER.error("handle_send_device_message")
-        LOGGER.error(api_client)
+        LOGGER.debug("handle_send_device_message")
+        LOGGER.debug(api_client)
 
         if api_client:
             await api_client.send_device_message(uuid, message)
@@ -132,25 +123,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ),
     )
 
-    for component in PLATFORMS:
-        LOGGER.debug(f"[one2track] creating tracker for: {entry}")
-        await hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, component)
-        )
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
-    unload_ok = all(
-        await asyncio.gather(
-            *[
-                hass.config_entries.async_forward_entry_unload(entry, component)
-                for component in PLATFORMS
-            ]
-        )
-    )
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
 

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import timedelta, datetime
 from typing import List
@@ -5,7 +6,6 @@ from typing import List
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-import async_timeout
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.core import callback
 from homeassistant.helpers.update_coordinator import (
@@ -75,7 +75,7 @@ class GpsCoordinator(DataUpdateCoordinator):
         try:
             # Note: asyncio.TimeoutError and aiohttp.ClientError are already
             # handled by the data update coordinator.
-            async with async_timeout.timeout(300):
+            async with asyncio.timeout(300):
 
                 #this caused issues in latest HA core?
                 #data = await (await self.hass.async_add_executor_job(
@@ -191,9 +191,10 @@ class One2TrackSensor(CoordinatorEntity, TrackerEntity):
             return 'home'
 
         try:
-            zone_name = self._hass.components.zone.async_active_zone(self.latitude, self.longitude)
-            if zone_name:
-                return zone_name.name
+            from homeassistant.components.zone import async_active_zone
+            zone_state = async_active_zone(self._hass, self.latitude, self.longitude)
+            if zone_state:
+                return zone_state.name
         except Exception as err:
             LOGGER.error(f"Cannot get zone for tracker: {err}")
 

@@ -48,7 +48,7 @@ async def async_call_action_from_config(hass: HomeAssistant, config: Dict, varia
         if api_client and uuid:
             await api_client.set_device_refresh_location(uuid)
         else:
-            LOGGER.error(f"GPS client or UUID not found for device_id: {device_id}")
+            LOGGER.error(f"GPS client or UUID not found for device_id: {config['device_id']}")
 
 def get_device(hass, device_id):
     # Get the device registry

@@ -98,14 +98,22 @@ class GpsClient():
             cookie = response.headers['Set-Cookie']
 
         if cookie:
-            return response.headers['Set-Cookie'].split(CONFIG["session_cookie"])[1].split(";")[
-                0].replace("=", "")
+            try:
+                return response.headers['Set-Cookie'].split(CONFIG["session_cookie"])[1].split(";")[
+                    0].replace("=", "")
+            except (IndexError, KeyError) as e:
+                _LOGGER.error(f"Failed to parse session cookie: {e}")
+                return ""
         else:
             _LOGGER.warning(f"No new cookie found {self.cookie} was the old cookie")
             return ""
 
     def parse_csrf(self, html) -> str:
-        return html.split("name=\"csrf-token\" content=\"")[1].split("\"")[0]
+        try:
+            return html.split("name=\"csrf-token\" content=\"")[1].split("\"")[0]
+        except IndexError:
+            _LOGGER.error("Failed to parse CSRF token from HTML - page structure may have changed")
+            raise AuthenticationError("Could not find CSRF token on login page")
 
     async def login(self):
         login_data = {
