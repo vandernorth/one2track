@@ -21,3 +21,11 @@ force_update:
     entity:
       integration: one2track
       domain: device_tracker
+
+power_off:
+  name: Power off
+  description: Remotely shut down a One2Track device
+  target:
+    entity:
+      integration: one2track
+      domain: device_tracker
