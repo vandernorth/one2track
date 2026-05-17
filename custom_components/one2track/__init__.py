@@ -1,18 +1,12 @@
 from aiohttp import ClientError
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.const import Platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .client import get_client, One2TrackConfig, AuthenticationError
-from .common import (
-    CONF_USER_NAME,
-    CONF_PASSWORD,
-    CONF_ID,
-    DOMAIN,
-    LOGGER
-)
+from .client import AuthenticationError, One2TrackConfig, get_client
+from .common import CONF_ID, CONF_PASSWORD, CONF_USER_NAME, DOMAIN, LOGGER
 from .coordinator import GpsCoordinator
 from .services import async_setup_services, async_unload_services
 
@@ -23,7 +17,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up One2Track Data from a config entry."""
 
     session = async_get_clientsession(hass)
-    config = One2TrackConfig(username=entry.data[CONF_USER_NAME], password=entry.data[CONF_PASSWORD], id=entry.data[CONF_ID])
+    config = One2TrackConfig(
+        username=entry.data[CONF_USER_NAME],
+        password=entry.data[CONF_PASSWORD],
+        id=entry.data[CONF_ID],
+    )
     api = get_client(config, session)
     try:
         account_id = await api.install()
@@ -32,7 +30,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady from ex
 
     if account_id != entry.data[CONF_ID]:
-        LOGGER.error("Unexpected initial account id: %s. Expected: %s", account_id, entry.data[CONF_ID])
+        LOGGER.error(
+            "Unexpected initial account id: %s. Expected: %s",
+            account_id,
+            entry.data[CONF_ID],
+        )
         raise ConfigEntryNotReady
 
     coordinator = GpsCoordinator(hass, api)
@@ -40,8 +42,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
-        'api_client': api,
-        'coordinator': coordinator,
+        "api_client": api,
+        "coordinator": coordinator,
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
