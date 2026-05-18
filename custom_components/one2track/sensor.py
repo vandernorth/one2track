@@ -31,6 +31,7 @@ LOGGER = logging.getLogger(__name__)
 @dataclass(frozen=True, kw_only=True)
 class One2TrackSensorDescription(SensorEntityDescription):
     """Describes a One2Track sensor."""
+
     value_fn: Callable[[TrackerDevice], Any]
 
 
@@ -195,21 +196,19 @@ SENSOR_DESCRIPTIONS: list[One2TrackSensorDescription] = [
 
 
 async def async_setup_entry(
-        hass: HomeAssistant,
-        entry: ConfigEntry,
-        async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up One2Track sensor entities."""
-    coordinator: GpsCoordinator = hass.data[DOMAIN][entry.entry_id]['coordinator']
+    coordinator: GpsCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 
     devices: list[TrackerDevice] = coordinator.data or []
 
     entities = []
     for device in devices:
         for description in SENSOR_DESCRIPTIONS:
-            entities.append(
-                One2TrackSensorEntity(coordinator, device, description)
-            )
+            entities.append(One2TrackSensorEntity(coordinator, device, description))
 
     async_add_entities(entities)
 
@@ -221,10 +220,10 @@ class One2TrackSensorEntity(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
 
     def __init__(
-            self,
-            coordinator: GpsCoordinator,
-            device: TrackerDevice,
-            description: One2TrackSensorDescription,
+        self,
+        coordinator: GpsCoordinator,
+        device: TrackerDevice,
+        description: One2TrackSensorDescription,
     ) -> None:
         super().__init__(coordinator)
         self.entity_description = description
@@ -234,9 +233,9 @@ class One2TrackSensorEntity(CoordinatorEntity, SensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
-            identifiers={(DOMAIN, self._device['uuid'])},
-            serial_number=self._device['serial_number'],
-            name=self._device['name'],
+            identifiers={(DOMAIN, self._device["uuid"])},
+            serial_number=self._device["serial_number"],
+            name=self._device["name"],
         )
 
     @property
@@ -247,7 +246,7 @@ class One2TrackSensorEntity(CoordinatorEntity, SensorEntity):
     def _handle_coordinator_update(self) -> None:
         new_data: list[TrackerDevice] = self.coordinator.data
         if new_data:
-            me = next((x for x in new_data if x['uuid'] == self._device['uuid']), None)
+            me = next((x for x in new_data if x["uuid"] == self._device["uuid"]), None)
             if me:
                 self._device = me
         self.async_write_ha_state()

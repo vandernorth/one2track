@@ -18,18 +18,16 @@ LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
-        hass: HomeAssistant,
-        entry: ConfigEntry,
-        async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up One2Track binary sensor entities."""
-    coordinator: GpsCoordinator = hass.data[DOMAIN][entry.entry_id]['coordinator']
+    coordinator: GpsCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 
     devices: list[TrackerDevice] = coordinator.data or []
 
-    async_add_entities(
-        [One2TrackTumbleSensor(coordinator, device) for device in devices]
-    )
+    async_add_entities([One2TrackTumbleSensor(coordinator, device) for device in devices])
 
 
 class One2TrackTumbleSensor(CoordinatorEntity, BinarySensorEntity):
@@ -40,9 +38,9 @@ class One2TrackTumbleSensor(CoordinatorEntity, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.SAFETY
 
     def __init__(
-            self,
-            coordinator: GpsCoordinator,
-            device: TrackerDevice,
+        self,
+        coordinator: GpsCoordinator,
+        device: TrackerDevice,
     ) -> None:
         super().__init__(coordinator)
         self._device = device
@@ -51,9 +49,9 @@ class One2TrackTumbleSensor(CoordinatorEntity, BinarySensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
-            identifiers={(DOMAIN, self._device['uuid'])},
-            serial_number=self._device['serial_number'],
-            name=self._device['name'],
+            identifiers={(DOMAIN, self._device["uuid"])},
+            serial_number=self._device["serial_number"],
+            name=self._device["name"],
         )
 
     @property
@@ -67,7 +65,7 @@ class One2TrackTumbleSensor(CoordinatorEntity, BinarySensorEntity):
     def _handle_coordinator_update(self) -> None:
         new_data: list[TrackerDevice] = self.coordinator.data
         if new_data:
-            me = next((x for x in new_data if x['uuid'] == self._device['uuid']), None)
+            me = next((x for x in new_data if x["uuid"] == self._device["uuid"]), None)
             if me:
                 self._device = me
         self.async_write_ha_state()

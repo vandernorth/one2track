@@ -2,15 +2,10 @@ from typing import NamedTuple, TypedDict
 
 
 class AuthenticationError(Exception):
-    """This error is thrown when Authentication fails, which can mean the username/password or domain is incorrect"""
+    """Authentication failed (wrong username/password or domain)."""
 
 
 class One2TrackConfig(NamedTuple):
-    """
-    This is our config for logging into One2Track
-
-    """
-
     username: str
     password: str
     id: str | None = None

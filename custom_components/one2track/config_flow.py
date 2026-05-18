@@ -1,27 +1,17 @@
 import logging
 
+import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-import voluptuous as vol
-import homeassistant.helpers.config_validation as cv
 
-from .common import (
-    DOMAIN,
-    CONF_USER_NAME,
-    CONF_PASSWORD,
-    CONF_ID
-)
-from .client import (
-    get_client,
-    One2TrackConfig,
-    AuthenticationError
-)
+from .client import AuthenticationError, One2TrackConfig, get_client
+from .common import CONF_ID, CONF_PASSWORD, CONF_USER_NAME, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-
     # For future migration support
     VERSION = 1
 
@@ -31,13 +21,14 @@ class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input:
             try:
                 session = async_get_clientsession(self.hass)
-                config = One2TrackConfig(username=user_input[CONF_USER_NAME], password=user_input[CONF_PASSWORD])
+                config = One2TrackConfig(
+                    username=user_input[CONF_USER_NAME],
+                    password=user_input[CONF_PASSWORD],
+                )
                 client = get_client(config, session)
                 account_id = await client.install()
 
-                _LOGGER.info(
-                    "One2Track GPS: Found account: %s", account_id
-                )
+                _LOGGER.info("One2Track GPS: Found account: %s", account_id)
 
                 user_input[CONF_ID] = account_id
                 await self.async_set_unique_id(user_input[CONF_ID])
@@ -53,10 +44,7 @@ class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_USER_NAME): cv.string,
-                    vol.Required(CONF_PASSWORD): cv.string
-                }
+                {vol.Required(CONF_USER_NAME): cv.string, vol.Required(CONF_PASSWORD): cv.string}
             ),
             errors=errors,
         )

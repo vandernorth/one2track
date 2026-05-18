@@ -10,7 +10,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from .client import GpsClient, AuthenticationError
+from .client import AuthenticationError, GpsClient
 from .common import DEFAULT_UPDATE_RATE_MIN
 
 LOGGER = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class GpsCoordinator(DataUpdateCoordinator):
             LOGGER,
             name="One2Track",
             update_interval=timedelta(minutes=DEFAULT_UPDATE_RATE_MIN),
-            always_update=False
+            always_update=False,
         )
         self.gps_api = gps_api
         self.last_update = None
