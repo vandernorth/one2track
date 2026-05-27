@@ -3,7 +3,6 @@ import logging
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .client import AuthenticationError, One2TrackConfig, get_client
 from .common import CONF_ID, CONF_PASSWORD, CONF_USER_NAME, DOMAIN
@@ -12,20 +11,19 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    # For future migration support
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
         errors = {}
         user_input = user_input or {}
         if user_input:
+            client = None
             try:
-                session = async_get_clientsession(self.hass)
                 config = One2TrackConfig(
                     username=user_input[CONF_USER_NAME],
                     password=user_input[CONF_PASSWORD],
                 )
-                client = get_client(config, session)
+                client = get_client(config)
                 account_id = await client.install()
 
                 _LOGGER.info("One2Track GPS: Found account: %s", account_id)
@@ -40,6 +38,9 @@ class One2TrackConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             except AuthenticationError:
                 errors["base"] = "authentication_error"
+            finally:
+                if client and hasattr(client, "session"):
+                    await client.session.close()
 
         return self.async_show_form(
             step_id="user",
