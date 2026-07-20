@@ -1,7 +1,6 @@
 import logging
 
-from homeassistant.components.device_tracker.config_entry import TrackerEntity
-from homeassistant.components.zone import async_active_zone
+from homeassistant.components.device_tracker import TrackerEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -30,7 +29,7 @@ async def async_setup_entry(
     LOGGER.info("Adding %s found one2track devices", len(devices))
 
     async_add_entities(
-        [One2TrackDeviceTracker(coordinator, hass, device) for device in devices],
+        [One2TrackDeviceTracker(coordinator, device) for device in devices],
         update_before_add=False,
     )
 
@@ -40,11 +39,8 @@ async def async_setup_entry(
 class One2TrackDeviceTracker(CoordinatorEntity, TrackerEntity):
     _device: TrackerDevice
 
-    def __init__(
-        self, coordinator: GpsCoordinator, hass: HomeAssistant, device: TrackerDevice
-    ) -> None:
+    def __init__(self, coordinator: GpsCoordinator, device: TrackerDevice) -> None:
         super().__init__(coordinator)
-        self._hass = hass
         self._device = device
         self._attr_unique_id = device["uuid"]
 
@@ -102,26 +98,6 @@ class One2TrackDeviceTracker(CoordinatorEntity, TrackerEntity):
             "host": location.get("host"),
             "port": location.get("port"),
         }
-
-    @property
-    def battery_level(self):
-        """Return battery value of the device."""
-        return self._device.get("last_location", {}).get("battery_percentage")
-
-    @property
-    def location_name(self):
-        """Return a location name for the current location of the device."""
-        try:
-            if self.latitude is not None and self.longitude is not None:
-                zone_name = async_active_zone(
-                    self._hass, self.latitude, self.longitude, self.location_accuracy
-                )
-                if zone_name:
-                    return zone_name.name
-        except Exception as err:
-            LOGGER.error("Cannot get zone for tracker: %s", err)
-
-        return self._device.get("last_location", {}).get("address")
 
     @property
     def latitude(self):

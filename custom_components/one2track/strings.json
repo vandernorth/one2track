@@ -50,6 +50,9 @@
       "accuracy": {
         "name": "GPS accuracy"
       },
+      "address": {
+        "name": "Address"
+      },
       "status": {
         "name": "Status",
         "state": {

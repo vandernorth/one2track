@@ -98,6 +98,10 @@ def _get_accuracy(device: TrackerDevice) -> float | None:
     return None
 
 
+def _get_address(device: TrackerDevice) -> str | None:
+    return device.get("last_location", {}).get("address")
+
+
 def _get_status(device: TrackerDevice) -> str | None:
     val = device.get("status")
     if val is not None:
@@ -183,6 +187,12 @@ SENSOR_DESCRIPTIONS: list[One2TrackSensorDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:crosshairs-gps",
         value_fn=_get_accuracy,
+    ),
+    One2TrackSensorDescription(
+        key="address",
+        translation_key="address",
+        icon="mdi:map-marker",
+        value_fn=_get_address,
     ),
     One2TrackSensorDescription(
         key="status",
