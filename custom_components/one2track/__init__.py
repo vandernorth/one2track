@@ -2,9 +2,15 @@ from aiohttp import ClientError
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 
-from .client import AuthenticationError, GpsClient, One2TrackConfig, get_client
+from .client import (
+    AuthenticationError,
+    GpsClient,
+    One2TrackConfig,
+    SiteUnavailableError,
+    get_client,
+)
 from .common import CONF_ID, CONF_PASSWORD, CONF_USER_NAME, DOMAIN, LOGGER
 from .coordinator import GpsCoordinator
 from .services import async_setup_services, async_unload_services
@@ -23,7 +29,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     api = get_client(config)
     try:
         account_id = await api.install()
-    except (ClientError, AuthenticationError) as ex:
+    except AuthenticationError as ex:
+        LOGGER.error("One2Track authentication failed during setup, reauthentication required")
+        raise ConfigEntryAuthFailed from ex
+    except (ClientError, SiteUnavailableError, TimeoutError) as ex:
         LOGGER.error("Could not retrieve details from One2Track API")
         raise ConfigEntryNotReady from ex
 

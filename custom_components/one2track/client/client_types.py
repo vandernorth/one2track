@@ -1,8 +1,16 @@
 from typing import NamedTuple, TypedDict
 
 
-class AuthenticationError(Exception):
-    """Authentication failed (wrong username/password or domain)."""
+class One2TrackError(Exception):
+    """Base error for the One2Track client."""
+
+
+class AuthenticationError(One2TrackError):
+    """Confirmed invalid credentials — reauth required."""
+
+
+class SiteUnavailableError(One2TrackError):
+    """The One2Track site/API is temporarily unreachable or returned a transient error."""
 
 
 class One2TrackConfig(NamedTuple):

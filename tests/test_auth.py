@@ -7,6 +7,7 @@ import pytest
 from custom_components.one2track.client.client_types import (
     AuthenticationError,
     One2TrackConfig,
+    SiteUnavailableError,
 )
 from custom_components.one2track.client.gps_client import GpsClient
 
@@ -21,11 +22,14 @@ class TestParseCsrf:
         assert GpsClient._parse_csrf(html) == "token123"
 
     def test_raises_on_missing_token(self):
-        with pytest.raises(AuthenticationError, match="CSRF token not found"):
+        # An unparsable login page (maintenance page, botwall, A/B test) isn't
+        # proof of bad credentials, so this is a transient/site error, not an
+        # authentication error.
+        with pytest.raises(SiteUnavailableError, match="CSRF token not found"):
             GpsClient._parse_csrf("<html><body>no token here</body></html>")
 
     def test_raises_on_empty_html(self):
-        with pytest.raises(AuthenticationError, match="CSRF token not found"):
+        with pytest.raises(SiteUnavailableError, match="CSRF token not found"):
             GpsClient._parse_csrf("")
 
 

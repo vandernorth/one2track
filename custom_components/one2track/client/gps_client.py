@@ -4,7 +4,12 @@ from http.cookies import SimpleCookie
 
 from aiohttp import ClientSession
 
-from .client_types import AuthenticationError, One2TrackConfig, TrackerDevice
+from .client_types import (
+    AuthenticationError,
+    One2TrackConfig,
+    SiteUnavailableError,
+    TrackerDevice,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -73,7 +78,9 @@ class GpsClient:
     async def _get_csrf(self) -> None:
         response = await self._request(LOGIN_URL)
         if response.status != 200:
-            raise AuthenticationError("Login page unavailable")
+            # No credentials were sent yet, so a non-200 here can never confirm
+            # bad credentials — treat it as a transient/site issue.
+            raise SiteUnavailableError(f"Login page unavailable (status {response.status})")
 
         html = await response.text()
         self._csrf = self._parse_csrf(html)
@@ -96,11 +103,24 @@ class GpsClient:
             if new_cookie:
                 self._cookie = new_cookie
                 return
+            # Redirected but no session cookie came back — odd server behavior,
+            # not proof of bad credentials.
+            raise SiteUnavailableError("Login redirected without session cookie")
 
-        raise AuthenticationError("Invalid username or password")
+        if response.status >= 500 or response.status == 429:
+            raise SiteUnavailableError(f"Login endpoint unavailable (status {response.status})")
+
+        if response.status == 200:
+            # The site re-rendered the sign-in form, which is exactly what
+            # happens on a wrong username/password.
+            raise AuthenticationError("Invalid username or password")
+
+        raise SiteUnavailableError(f"Unexpected login response (status {response.status})")
 
     async def _get_user_id(self) -> str:
         response = await self._request(f"{BASE_URL}/", allow_redirects=False)
+        if response.status >= 500 or response.status == 429:
+            raise SiteUnavailableError(f"Account page unavailable (status {response.status})")
         if response.status != 302 or "Location" not in response.headers:
             raise AuthenticationError("Could not determine account ID")
 
@@ -112,7 +132,7 @@ class GpsClient:
         """Fetch a fresh CSRF token (needed before each action request)."""
         response = await self._request(LOGIN_URL)
         if response.status != 200:
-            raise AuthenticationError("Could not get CSRF token")
+            raise SiteUnavailableError(f"Could not get CSRF token (status {response.status})")
 
         html = await response.text()
         new_cookie = self._extract_cookie(response)
@@ -144,11 +164,19 @@ class GpsClient:
         url = DEVICE_URL.format(account_id=self.account_id)
         response = await self._request(url, use_json=True)
 
-        if response.status != 200:
-            _LOGGER.error("Cannot get devices, status %s", response.status)
+        if response.status in (401, 403):
+            # Session/credentials confirmed rejected — force a fresh login next time.
+            _LOGGER.debug("Session rejected (status %s), clearing cached session", response.status)
             self._cookie = ""
             self._csrf = ""
             raise AuthenticationError(f"API returned status {response.status}")
+
+        if response.status != 200:
+            # Transient failure (5xx, rate limiting, unexpected status) — keep the
+            # session, the server is just having issues. Logging policy for
+            # repeated failures lives in the coordinator, not here.
+            _LOGGER.debug("Cannot get devices, status %s", response.status)
+            raise SiteUnavailableError(f"API returned status {response.status}")
 
         data = await response.json(content_type=None)
         _LOGGER.debug("Got %s devices", len(data))
@@ -211,5 +239,7 @@ class GpsClient:
         """Extract the CSRF token from a login page's HTML."""
         m = re.search(r'name="csrf-token"\s+content="([^"]+)"', html)
         if not m:
-            raise AuthenticationError("CSRF token not found on page")
+            # Page structure doesn't match what we expect (maintenance page,
+            # botwall, A/B test) — not proof of bad credentials.
+            raise SiteUnavailableError("CSRF token not found on page")
         return m.group(1)

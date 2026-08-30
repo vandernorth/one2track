@@ -2,6 +2,8 @@ from aiohttp import ClientSession, DummyCookieJar
 
 from .client_types import AuthenticationError as AuthenticationError
 from .client_types import One2TrackConfig as One2TrackConfig
+from .client_types import One2TrackError as One2TrackError
+from .client_types import SiteUnavailableError as SiteUnavailableError
 from .client_types import TrackerDevice as TrackerDevice
 from .gps_client import GpsClient as GpsClient
 
